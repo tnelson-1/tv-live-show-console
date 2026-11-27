@@ -16910,8 +16910,8 @@ document.addEventListener("input", e => {
   if (el.tagName === "INPUT") el.value = v; else el.textContent = v;
 }, true);
 
-/* Ask AI is not offered on the public GitHub console: hide every Ask AI control there */
-if (!window.claude) {
+/* Ask AI is switched off in every version of the console: hide every Ask AI control */
+{
   const st = document.createElement("style");
   st.textContent = '.ask-grid > .card:first-child, [data-x="ask"], [data-x="askstop"], [data-x="asksend"], #askOut, .pv-askbtn, .sr.ai, [data-pvr="ask"] { display: none !important; } .ask-grid { grid-template-columns: minmax(0,1fr) !important; }';
   document.head.appendChild(st);
@@ -16995,7 +16995,7 @@ function pvRender() {
       <button class="ghost pstep" type="button" data-pvx="next" aria-label="Next product">&rsaquo;</button>
     </div>
     <nav class="pv-tabs" aria-label="Right panel">${PV_TABS.map(t => `<button type="button" data-pvtab="${t[0]}" aria-pressed="${t[0] === PV.tab}">${t[1]}</button>`).join("")}</nav>
-    <div class="pv-sbox"><input id="pvQ" type="search" autocomplete="off" spellcheck="false" placeholder="${window.claude ? "Search or ask AI   /" : "Search this product   /"}" aria-label="Search this product or ask AI"><div id="pvRes" role="listbox" hidden></div></div>
+    <div class="pv-sbox"><input id="pvQ" type="search" autocomplete="off" spellcheck="false" placeholder="Search this product   /" aria-label="Search this product or ask AI"><div id="pvRes" role="listbox" hidden></div></div>
     <button class="btn pv-askbtn" type="button" data-pvx="askbtn">Ask AI</button>
     <button class="ghost" type="button" data-pvx="cue" title="Send a prompt to every screen">Cue <kbd>K</kbd></button>
     <button class="ghost pv-auto" type="button" data-pvx="auto" title="Turn pages automatically">Auto-turn: ${PV.auto ? PV.auto + "s" : "off"}</button>
