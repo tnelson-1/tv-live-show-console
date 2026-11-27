@@ -777,6 +777,7 @@ body.pv-on #cue{position:fixed;left:0;right:0;top:0;z-index:80}
   <fieldset>
     <legend>Show</legend>
     <label>Countdown length in minutes<input type="number" id="setMin" min="1" max="180" step="1"></label>
+    <label>Claude API key for Ask AI (saved on this computer only, never published)<input type="password" id="setKey" autocomplete="off" spellcheck="false" placeholder="sk-ant-..."></label>
     <label class="ck"><input type="checkbox" id="setBf"><span>Black Friday styling. Changes the banner label and colours only. It does not switch on any price claim.</span></label>
     <label class="ck"><input type="checkbox" id="setLight"><span>Light mode</span></label>
     <label>Text size: <span id="bumpV"></span><input type="range" id="setBump" min="0" max="3" step="1"></label>
@@ -16416,6 +16417,53 @@ function paneAsk(p) {
 </section>`;
 }
 
+
+/* ---------- Ask AI: Claude's built-in connection on claude.ai, otherwise the Claude API with a key saved on this computer ---------- */
+const KEY_STORE = "tvLiveShow.claudeKey";
+const getKey = () => { try { return localStorage.getItem(KEY_STORE) || ""; } catch (e) { return ""; } };
+async function getAsker() {
+  const sample = window.claude ? await window.claude.use("sample").catch(() => null) : null;
+  if (sample) return sample;
+  const key = getKey().trim();
+  if (!key) return null;
+  return async (prompt, opts) => {
+    let res;
+    try {
+      res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        signal: opts && opts.signal,
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": key,
+          "anthropic-version": "2026-10-21",
+          "anthropic-dangerous-direct-browser-access": "true"
+        },
+        body: JSON.stringify({
+          model: "claude-opus-5-5",
+          max_tokens: 2000,
+          output_config: { effort: "low" },
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+    } catch (e) {
+      throw { code: e && e.name === "AbortError" ? "cancelled" : "upstream_error" };
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw { code: res.status === 401 || res.status === 403 ? "bad_key" : res.status === 429 ? "rate_limited" : "upstream_error" };
+    if (data.stop_reason === "refusal") throw { code: "refused" };
+    const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("").trim();
+    if (!text) throw { code: "upstream_error" };
+    if (opts && opts.onText) opts.onText({ text, delta: text });
+    return { text, truncated: data.stop_reason === "max_tokens" };
+  };
+}
+const NO_AI = "Ask AI needs a Claude API key on this computer. Press S for Settings and paste it into “Claude API key”.";
+document.addEventListener("change", e => {
+  if (e.target && e.target.id === "setKey") {
+    try { localStorage.setItem(KEY_STORE, e.target.value.trim()); } catch (err) { /* ignore */ }
+    toast(e.target.value.trim() ? "Claude API key saved on this computer" : "Claude API key removed");
+  }
+});
 let askCtl = null, askSrc = "ai";
 function askPrompt(p, q) {
   const c = C[p.id], st = S.products[p.id];
@@ -16458,8 +16506,8 @@ async function askRun() {
   const box = $("#askQ"); if (!box) return;
   const q = box.value.trim(); if (!q) { box.focus(); toast("Type the viewer's question first"); return; }
   const stat = $("#askStat"), out = $("#askOut"), stop = $('[data-x="askstop"]');
-  const sample = window.claude ? await window.claude.use("sample") : null;
-  if (!sample) { stat.textContent = "Ask AI is not available in this view. Use search or add the answer yourself."; return; }
+  const sample = await getAsker();
+  if (!sample) { stat.textContent = NO_AI; return; }
   if (askCtl) askCtl.abort();
   const ctl = askCtl = new AbortController();
   const p = BYID[S.pid];
@@ -16477,6 +16525,7 @@ async function askRun() {
       code === "rate_limited" ? "Too many questions at once. Wait a moment, then ask again." :
       code === "session_expired" ? "Sign in to Claude again, then ask." :
       code === "refused" ? "The AI would not answer that. Rephrase the question." :
+      code === "bad_key" ? "The Claude API key was not accepted. Check it in Settings (S)." :
       "Something went wrong. Ask again.";
   } finally { if (askCtl === ctl) { askCtl = null; stop.hidden = true; } }
 }
@@ -16813,6 +16862,8 @@ function timerOut() {
     } finally { TIMER_IN = false; }
   }, () => {});
 })();
+
+{ const sk = document.getElementById("setKey"); if (sk) sk.value = getKey(); }
 
 /* ---------- product picker (used when there are more than four products) ---------- */
 const MANY = PRODUCTS.length > 4;
@@ -17190,8 +17241,8 @@ function pvPick(k) {
 }
 async function pvAsk(v) {
   if (!v) return;
-  const sample = window.claude ? await window.claude.use("sample") : null;
-  if (!sample) { pvAnsOpen(`<span class="k">Ask AI</span><p class="pva-say">Ask AI is not available on this screen. Try the search, or ask the producer.</p>`); return; }
+  const sample = await getAsker();
+  if (!sample) { pvAnsOpen(`<span class="k">Ask AI</span><p class="pva-say">${esc(NO_AI)}</p>`); return; }
   if (pvAskCtl) pvAskCtl.abort();
   const ctl = pvAskCtl = new AbortController();
   const p = BYID[S.pid];
@@ -17218,7 +17269,8 @@ async function pvAsk(v) {
       (code === "not_granted" || code === "sampling_disabled" || code === "not_declared" || code === "capability_disabled") ? "Ask AI is switched off on this screen. Try the search, or ask the producer." :
       code === "rate_limited" ? "Too many questions at once. Wait a moment, then ask again." :
       code === "session_expired" ? "Sign in to Claude again, then ask." :
-      code === "refused" ? "The AI would not answer that. Try rewording it." : "Something went wrong. Ask again.";
+      code === "refused" ? "The AI would not answer that. Try rewording it." :
+      code === "bad_key" ? "The Claude API key was not accepted. Check it in Settings (S)." : "Something went wrong. Ask again.";
   } finally {
     if (pvAskCtl === ctl) pvAskCtl = null;
     const st = $('[data-pva="stop"]'); if (st) st.hidden = true;
