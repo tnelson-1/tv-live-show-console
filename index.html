@@ -16879,6 +16879,14 @@ function timerOut() {
 
 { const sk = document.getElementById("setKey"); if (sk) sk.value = getKey(); }
 
+/* No AI outside claude.ai: hide the Ask AI controls on the public GitHub Pages console */
+const AI_OK = !!window.claude;
+if (!AI_OK) {
+  const st = document.createElement("style");
+  st.textContent = '.ask-grid > .card:first-child, [data-x="ask"], [data-x="askstop"], #askOut, .pv-askbtn, .sr.ai, [data-pvr="ask"] { display: none !important; } .ask-grid { grid-template-columns: minmax(0,1fr) !important; }';
+  document.head.appendChild(st);
+}
+
 /* ---------- product picker (used when there are more than four products) ---------- */
 const MANY = PRODUCTS.length > 4;
 function pStep(d) {
@@ -16956,7 +16964,7 @@ function pvRender() {
       <button class="ghost pstep" type="button" data-pvx="next" aria-label="Next product">&rsaquo;</button>
     </div>
     <nav class="pv-tabs" aria-label="Right panel">${PV_TABS.map(t => `<button type="button" data-pvtab="${t[0]}" aria-pressed="${t[0] === PV.tab}">${t[1]}</button>`).join("")}</nav>
-    <div class="pv-sbox"><input id="pvQ" type="search" autocomplete="off" spellcheck="false" placeholder="Search or ask AI   /" aria-label="Search this product or ask AI"><div id="pvRes" role="listbox" hidden></div></div>
+    <div class="pv-sbox"><input id="pvQ" type="search" autocomplete="off" spellcheck="false" placeholder="${window.claude ? "Search or ask AI   /" : "Search this product   /"}" aria-label="Search this product or ask AI"><div id="pvRes" role="listbox" hidden></div></div>
     <button class="btn pv-askbtn" type="button" data-pvx="askbtn">Ask AI</button>
     <button class="ghost" type="button" data-pvx="cue" title="Send a prompt to every screen">Cue <kbd>K</kbd></button>
     <button class="ghost pv-auto" type="button" data-pvx="auto" title="Turn pages automatically">Auto-turn: ${PV.auto ? PV.auto + "s" : "off"}</button>
