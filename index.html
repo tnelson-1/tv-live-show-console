@@ -16521,7 +16521,7 @@ async function askRun() {
   const q = box.value.trim(); if (!q) { box.focus(); toast("Type the viewer's question first"); return; }
   const stat = $("#askStat"), out = $("#askOut"), stop = $('[data-x="askstop"]');
   const sample = await getAsker();
-  if (!sample) { stat.innerHTML = `Ask AI works in the Claude version of this console. <a href="${AI_HOME}" target="_blank" rel="noopener">Open it here</a> (sign in with your Claude account).`; openAiHome(); return; }
+  if (!sample) { stat.textContent = "To switch on Ask AI on this computer: press S for Settings and paste a Claude API key into \u201cClaude API key for Ask AI\u201d. You only do this once per computer."; openD(settings); setTimeout(() => { const k = document.getElementById("setKey"); if (k) k.focus(); }, 50); return; }
   if (askCtl) askCtl.abort();
   const ctl = askCtl = new AbortController();
   const p = BYID[S.pid];
@@ -17256,7 +17256,7 @@ function pvPick(k) {
 async function pvAsk(v) {
   if (!v) return;
   const sample = await getAsker();
-  if (!sample) { pvAnsOpen(`<span class="k">Ask AI</span><p class="pva-say">Ask AI works in the Claude version of this console. <a href="${AI_HOME}#presenter" target="_blank" rel="noopener">Open it here</a> and sign in with your Claude account.</p>`); openAiHome("#presenter"); return; }
+  if (!sample) { pvAnsOpen(`<span class="k">Ask AI</span><p class="pva-say">To switch on Ask AI on this computer, press S for Settings and paste a Claude API key into \u201cClaude API key for Ask AI\u201d. You only do this once per computer.</p>`); return; }
   if (pvAskCtl) pvAskCtl.abort();
   const ctl = pvAskCtl = new AbortController();
   const p = BYID[S.pid];
