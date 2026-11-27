@@ -16469,7 +16469,9 @@ async function getAsker() {
     return { text, truncated: data.stop_reason === "max_tokens" };
   };
 }
-const NO_AI = "Ask AI needs a Claude API key on this computer. Press S for Settings and paste it into “Claude API key”.";
+const AI_HOME = "https://claude.ai/artifact/1e2MAMxVvSM6zdsobzCy92";
+const NO_AI = "Ask AI works in the Claude version of this console.";
+function openAiHome(hash) { try { window.open(AI_HOME + (hash || ""), "_blank", "noopener"); } catch (e) { /* ignore */ } }
 document.addEventListener("change", e => {
   if (e.target && e.target.id === "setKey") {
     try { localStorage.setItem(KEY_STORE, e.target.value.trim()); } catch (err) { /* ignore */ }
@@ -16519,7 +16521,7 @@ async function askRun() {
   const q = box.value.trim(); if (!q) { box.focus(); toast("Type the viewer's question first"); return; }
   const stat = $("#askStat"), out = $("#askOut"), stop = $('[data-x="askstop"]');
   const sample = await getAsker();
-  if (!sample) { stat.textContent = NO_AI; return; }
+  if (!sample) { stat.innerHTML = `Ask AI works in the Claude version of this console. <a href="${AI_HOME}" target="_blank" rel="noopener">Open it here</a> (sign in with your Claude account).`; openAiHome(); return; }
   if (askCtl) askCtl.abort();
   const ctl = askCtl = new AbortController();
   const p = BYID[S.pid];
@@ -17254,7 +17256,7 @@ function pvPick(k) {
 async function pvAsk(v) {
   if (!v) return;
   const sample = await getAsker();
-  if (!sample) { pvAnsOpen(`<span class="k">Ask AI</span><p class="pva-say">${esc(NO_AI)}</p>`); return; }
+  if (!sample) { pvAnsOpen(`<span class="k">Ask AI</span><p class="pva-say">Ask AI works in the Claude version of this console. <a href="${AI_HOME}#presenter" target="_blank" rel="noopener">Open it here</a> and sign in with your Claude account.</p>`); openAiHome("#presenter"); return; }
   if (pvAskCtl) pvAskCtl.abort();
   const ctl = pvAskCtl = new AbortController();
   const p = BYID[S.pid];
