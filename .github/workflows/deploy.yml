@@ -1,0 +1,26 @@
+name: Deploy to Vercel
+
+# Publishes the console to https://tv-live-show-console.vercel.app on every push to main,
+# whoever made the change. Needs repo secrets VERCEL_TOKEN, VERCEL_ORG_ID and VERCEL_PROJECT_ID.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: vercel-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Deploy to production
+        run: npx --yes vercel@39.1.0 deploy --prod --yes --token="${{ secrets.VERCEL_TOKEN }}"
